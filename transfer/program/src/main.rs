@@ -1,35 +1,104 @@
 #![no_main]
-use serde::{Deserialize, Serialize};
-
 sp1_zkvm::entrypoint!(main);
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Data {
-    pub data: [TransferData; 1],
+mod types;
+
+use alloy_primitives::{keccak256, Address, Bytes, FixedBytes, B256, U256};
+use alloy_sol_types::{SolType, sol};
+
+sol! {
+  #[derive(Debug)]
+  struct CompleteClaimData {
+      bytes32 identifier;
+      address owner;
+      uint32 timestampS;
+      uint32 epoch;
+  }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TransferData {
-    pub id: String,
-    pub bank: String,
-    pub to: String,
-    pub transfer_date: String,
-    pub amount: u64,
+sol! {
+  #[derive(Debug)]
+  struct SignedClaim {
+      CompleteClaimData claim;
+      bytes[] signatures;
+  }
+}
+
+sol! {
+  #[derive(Debug)]
+  struct PublicValuesStruct {
+    bytes32 hashedChannelId;
+    bytes32 hashedChannelAccount;
+    uint256 amount;
+    bytes32 hashedClaimInfo;
+    SignedClaim signedClaim;
+  }
 }
 
 pub fn main() {
-    let data = sp1_zkvm::io::read::<String>();
+    let raw_proof_data = sp1_zkvm::io::read::<String>();
+    let proof: types::Proof = serde_json::from_str(&raw_proof_data).unwrap();
 
-    let trx_data: Data = serde_json::from_str(&data).unwrap();
+    let mut encoded_claim_info: Vec<u8> = Vec::new();
+    encoded_claim_info.extend_from_slice(proof.claim_info.provider.as_bytes());
+    encoded_claim_info.extend_from_slice(b"\n");
+    encoded_claim_info.extend_from_slice(
+        serde_json::to_string(&proof.claim_info.parameters)
+            .unwrap()
+            .as_bytes(),
+    );
+    encoded_claim_info.extend_from_slice(b"\n");
+    encoded_claim_info.extend_from_slice(proof.claim_info.context.as_bytes());
 
-    let bank = sp1_zkvm::io::read::<String>();
-    let to = sp1_zkvm::io::read::<String>();
-    let amount = sp1_zkvm::io::read::<u64>();
+    let hashed_claim_info: B256 = keccak256(encoded_claim_info);
+    let hashed_channel_id: B256 = keccak256(
+        &proof.claim_info.parameters.response_matches[0]
+            .value_resp
+            .data[0]
+            .bank,
+    );
+    let hashed_channel_account: B256 = keccak256(
+        &proof.claim_info.parameters.response_matches[0]
+            .value_resp
+            .data[0]
+            .to,
+    );
+    let amount: U256 = U256::from(
+        proof.claim_info.parameters.response_matches[0]
+            .value_resp
+            .data[0]
+            .amount,
+    );
+    let identifier = proof
+        .signed_claim
+        .claim
+        .identifier
+        .parse::<FixedBytes<32>>()
+        .unwrap();
+    let owner = Address::parse_checksummed(proof.signed_claim.claim.owner, None).unwrap();
 
-    if trx_data.data[0].bank != bank || trx_data.data[0].to != to || trx_data.data[0].amount != amount 
-    {
-        panic!("Transaction do not match");
-    }
+    let signatures = proof
+        .signed_claim
+        .signatures
+        .iter()
+        .map(|v| v.as_str().to_string().into())
+        .collect::<Vec<Bytes>>();
 
-    sp1_zkvm::io::commit(&trx_data);
+    let bytes = PublicValuesStruct::abi_encode(&PublicValuesStruct {
+        hashedChannelId: hashed_channel_id,
+        hashedChannelAccount: hashed_channel_account,
+        amount: amount,
+        hashedClaimInfo: hashed_claim_info,
+        signedClaim: SignedClaim {
+            claim: CompleteClaimData {
+                epoch: proof.signed_claim.claim.epoch,
+                identifier: identifier,
+                owner: owner,
+                timestampS: proof.signed_claim.claim.timestamp,
+            },
+            signatures,
+        },
+    });
+
+    sp1_zkvm::io::commit_slice(&bytes);
 }
