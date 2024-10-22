@@ -4,7 +4,8 @@ sp1_zkvm::entrypoint!(main);
 mod types;
 
 use alloy_primitives::{keccak256, Address, Bytes, FixedBytes, B256, U256};
-use alloy_sol_types::{SolType, sol};
+use alloy_sol_types::{sol, SolType};
+use hex::FromHex;
 
 sol! {
   #[derive(Debug)]
@@ -38,44 +39,32 @@ sol! {
 pub fn main() {
     let raw_proof_data = sp1_zkvm::io::read::<String>();
     let proof: types::Proof = serde_json::from_str(&raw_proof_data).unwrap();
+    let parameters: types::Parameters = serde_json::from_str(&proof.claim_info.parameters).unwrap();
+    let transaction: types::Data = serde_json::from_str(&parameters.response_matches[0].value_resp).unwrap();
 
     let mut encoded_claim_info: Vec<u8> = Vec::new();
     encoded_claim_info.extend_from_slice(proof.claim_info.provider.as_bytes());
     encoded_claim_info.extend_from_slice(b"\n");
-    encoded_claim_info.extend_from_slice(
-        serde_json::to_string(&proof.claim_info.parameters)
-            .unwrap()
-            .as_bytes(),
-    );
+    encoded_claim_info.extend_from_slice(proof.claim_info.parameters.as_bytes());
     encoded_claim_info.extend_from_slice(b"\n");
     encoded_claim_info.extend_from_slice(proof.claim_info.context.as_bytes());
 
     let hashed_claim_info: B256 = keccak256(encoded_claim_info);
-    let hashed_channel_id: B256 = keccak256(
-        &proof.claim_info.parameters.response_matches[0]
-            .value_resp
-            .data[0]
-            .bank,
-    );
-    let hashed_channel_account: B256 = keccak256(
-        &proof.claim_info.parameters.response_matches[0]
-            .value_resp
-            .data[0]
-            .to,
-    );
-    let amount: U256 = U256::from(
-        proof.claim_info.parameters.response_matches[0]
-            .value_resp
-            .data[0]
-            .amount,
-    );
+    let hashed_channel_id: B256 =
+        keccak256(&transaction.data[0].bank);
+    let hashed_channel_account: B256 =
+        keccak256(&transaction.data[0].to);
+    let amount: U256 = U256::from(transaction.data[0].amount);
     let identifier = proof
         .signed_claim
         .claim
         .identifier
         .parse::<FixedBytes<32>>()
         .unwrap();
-    let owner = Address::parse_checksummed(proof.signed_claim.claim.owner, None).unwrap();
+
+    let address_str = proof.signed_claim.claim.owner.strip_prefix("0x").unwrap();
+    let address_bytes: [u8; 20] = <[u8; 20]>::from_hex(address_str).expect("Invalid hex string");
+    let owner = Address::from(address_bytes);
 
     let signatures = proof
         .signed_claim

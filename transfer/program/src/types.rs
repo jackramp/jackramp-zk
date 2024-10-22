@@ -20,7 +20,7 @@ pub struct ResponseMatch {
     #[serde(rename = "type")]
     pub type_resp: String,
     #[serde(rename = "value")]
-    pub value_resp: Data,
+    pub value_resp: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -43,7 +43,7 @@ pub struct Claim {
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct ClaimInfo {
     pub provider: String,
-    pub parameters: Parameters,
+    pub parameters: String,
     pub context: String,
 }
 
