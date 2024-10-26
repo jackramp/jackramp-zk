@@ -241,7 +241,7 @@ async fn claim_stablecoin_with_verified_proof(
     let merkle_path = Bytes::from(ver_data_flattened_bytes);
 
     let receipt = jr_contract
-        .verify_fill_offramp(
+        .fill_offramp(
             aligned_verification_data
                 .verification_data_commitment
                 .proof_commitment,
