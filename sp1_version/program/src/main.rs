@@ -39,8 +39,8 @@ sol! {
       address user;
       uint256 amount;
       uint256 amountRealWorld;
-      bytes32 hashedChannelId;
       bytes32 hashedChannelAccount;
+      bytes32 hashedChannelId;
   }
 }
 
@@ -95,8 +95,8 @@ pub fn main() {
             user: Address::from(owner_address),
             amount: amount,
             amountRealWorld: amount,
-            hashedChannelId: hashed_channel_id,
             hashedChannelAccount: hashed_channel_account,
+            hashedChannelId: hashed_channel_id,
         },
         proof: ReclaimProof {
             hashedClaimInfo: hashed_claim_info,

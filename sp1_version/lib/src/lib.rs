@@ -32,8 +32,8 @@ sol! {
         address user;
         uint256 amount;
         uint256 amountRealWorld;
-        bytes32 hashedChannelId;
         bytes32 hashedChannelAccount;
+        bytes32 hashedChannelId;
     }
   }
   
