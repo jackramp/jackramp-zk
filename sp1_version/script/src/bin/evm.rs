@@ -74,7 +74,7 @@ async fn main() {
     }
 
     println!("Welcome to the zkTransfer! Input the bank transaction, generate a zkProof, and claim your USD!");
-    println!("You will be asked to input Bank, Transaction ID, and Authorization token.");
+    println!("You will be asked to input Bank, Transaction ID, sender address, and Authorization token.");
 
     println!("{}", "What is your Channel ID?");
     let mut channel_id_answer = String::new();
@@ -90,6 +90,13 @@ async fn main() {
         .read_line(&mut trx_id_answer)
         .expect("Failed to read from stdin");
 
+    println!("{}", "Input your Sender Address?");
+    let mut sender_address_answer = String::new();
+
+    io::stdin()
+        .read_line(&mut sender_address_answer)
+        .expect("Failed to read from stdin");
+
     println!("{}", "Input your Authorization Token?");
     let mut trx_authorization_answer = String::new();
 
@@ -98,9 +105,10 @@ async fn main() {
         .expect("Failed to read from stdin");
 
     println!(
-        "Answers {}:{}:{}",
+        "Answers {}:{}:{}:{}",
         &channel_id_answer.trim(),
         &trx_id_answer.trim(),
+        &sender_address_answer.trim(),
         &trx_authorization_answer.trim()
     );
 
@@ -148,7 +156,10 @@ async fn main() {
 
     let mut stdin = SP1Stdin::new();
     stdin.write(&serde_json::to_string(&proof_data).unwrap());
-    stdin.write(wallet.address().as_fixed_bytes());
+
+    let cleaned_address_str = sender_address_answer.trim().trim_start_matches("0x");
+    let addr: Address = cleaned_address_str.parse().unwrap();
+    stdin.write(addr.as_fixed_bytes());
 
     let client = ProverClient::new();
     let (pk, vk) = client.setup(ZKTRANSFER_ELF);

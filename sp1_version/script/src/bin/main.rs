@@ -6,9 +6,9 @@ use clap::Parser;
 use reqwest;
 use sp1_sdk::{ProverClient, SP1Stdin};
 use std::io;
-use zktransfer_lib::PublicValuesStruct;
-use ethers::signers::{LocalWallet, Signer};
+use zktransfer_lib::{PublicValuesStruct, OfframpRequestParams};
 use ethers::types::Address;
+use ethers::utils::keccak256;
 
 /// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
 pub const ZKTRANSFER_ELF: &[u8] =
@@ -35,7 +35,7 @@ async fn main() {
     }
 
     println!("Welcome to the zkTransfer! Input the bank transaction, generate a zkProof, and claim your USD!");
-    println!("You will be asked to input Bank, Transaction ID, and Authorization token.");
+    println!("You will be asked to input Bank, Transaction ID, sender address, and Authorization token.");
 
     println!("{}", "What is your Channel ID?");
     let mut channel_id_answer = String::new();
@@ -50,6 +50,13 @@ async fn main() {
     io::stdin()
         .read_line(&mut trx_id_answer)
         .expect("Failed to read from stdin");
+    
+    println!("{}", "Input your Sender Address?");
+    let mut sender_address_answer = String::new();
+
+    io::stdin()
+        .read_line(&mut sender_address_answer)
+        .expect("Failed to read from stdin");
 
     println!("{}", "Input your Authorization Token?");
     let mut trx_authorization_answer = String::new();
@@ -59,9 +66,10 @@ async fn main() {
         .expect("Failed to read from stdin");
 
     println!(
-        "Answers {}:{}:{}",
+        "Answers {}:{}:{}:{}",
         &channel_id_answer.trim(),
         &trx_id_answer.trim(),
+        &sender_address_answer.trim(),
         &trx_authorization_answer.trim()
     );
 
@@ -107,12 +115,12 @@ async fn main() {
 
     println!("Generating Proof ");
 
-    let wallet: LocalWallet = LocalWallet::new(&mut rand::thread_rng());
-    let random_address: Address = wallet.address();
-
     let mut stdin = SP1Stdin::new();
     stdin.write(&serde_json::to_string(&proof).unwrap());
-    stdin.write(random_address.as_fixed_bytes());
+
+    let cleaned_address_str = sender_address_answer.trim().trim_start_matches("0x");
+    let addr: Address = cleaned_address_str.parse().unwrap();
+    stdin.write(addr.as_fixed_bytes());
 
     let client = ProverClient::new();
 
@@ -122,10 +130,17 @@ async fn main() {
 
         // Read the output.
         let decoded = PublicValuesStruct::abi_decode(output.as_slice(), true).unwrap();
-        println!("hash channel id: {:?}", decoded.offrampRequestParams.hashedChannelId);
-        println!("hash channel account: {:?}", decoded.offrampRequestParams.hashedChannelAccount);
+        println!("user: {}", decoded.offrampRequestParams.user);
         println!("amount: {}", decoded.offrampRequestParams.amount);
         println!("rw amount: {}", decoded.offrampRequestParams.amountRealWorld);
+        println!("hash channel account: {:?}", decoded.offrampRequestParams.hashedChannelAccount);
+        println!("hash channel id: {:?}", decoded.offrampRequestParams.hashedChannelId);
+
+        let bytes = OfframpRequestParams::abi_encode(&decoded.offrampRequestParams);
+        let hash = keccak256(bytes);
+
+        // Print the resulting hash in hexadecimal format
+        println!("requestOfframpId: 0x{:x}", ethers::types::U256::from(hash));
 
         // Record the number of cycles executed.
         println!("Number of cycles: {}", report.total_instruction_count());
