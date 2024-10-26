@@ -148,6 +148,7 @@ async fn main() {
 
     let mut stdin = SP1Stdin::new();
     stdin.write(&serde_json::to_string(&proof_data).unwrap());
+    stdin.write(wallet.address().as_fixed_bytes());
 
     let client = ProverClient::new();
     let (pk, vk) = client.setup(ZKTRANSFER_ELF);
@@ -171,7 +172,7 @@ async fn main() {
         proof_generator_addr: wallet.address(),
         vm_program_code: Some(ZKTRANSFER_ELF.to_vec()),
         verification_key: None,
-        pub_input: None,
+        pub_input: Some(proof.public_values.to_vec()),
     };
 
     let max_fee = estimate_fee(&rpc_url, PriceEstimate::Instant)
@@ -240,7 +241,7 @@ async fn claim_stablecoin_with_verified_proof(
     let merkle_path = Bytes::from(ver_data_flattened_bytes);
 
     let receipt = jr_contract
-        .fill_offramp(
+        .verify_fill_offramp(
             aligned_verification_data
                 .verification_data_commitment
                 .proof_commitment,

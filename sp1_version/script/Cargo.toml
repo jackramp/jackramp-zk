@@ -36,6 +36,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 zktransfer-lib = { path = "../lib" }
 alloy-sol-types = "0.8.8"
+rand = "0.8"
 
 [build-dependencies]
 sp1-helper = { git = "https://github.com/succinctlabs/sp1.git", rev = "v1.0.1" }

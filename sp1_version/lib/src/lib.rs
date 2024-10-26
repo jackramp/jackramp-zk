@@ -8,23 +8,39 @@ sol! {
         uint32 timestampS;
         uint32 epoch;
     }
-}
-
-sol! {
+  }
+  
+  sol! {
     #[derive(Debug)]
     struct SignedClaim {
         CompleteClaimData claim;
         bytes[] signatures;
     }
-}
-
-sol! {
+  }
+  
+  sol! {
     #[derive(Debug)]
-    struct PublicValuesStruct {
-        bytes32 hashedChannelId;
-        bytes32 hashedChannelAccount;
-        uint256 amount;
+    struct ReclaimProof {
         bytes32 hashedClaimInfo;
         SignedClaim signedClaim;
     }
-}
+  }
+  
+  sol! {
+    #[derive(Debug)]
+    struct OfframpRequestParams {
+        address user;
+        uint256 amount;
+        uint256 amountRealWorld;
+        bytes32 hashedChannelId;
+        bytes32 hashedChannelAccount;
+    }
+  }
+  
+  sol! {
+    #[derive(Debug)]
+    struct PublicValuesStruct {
+        OfframpRequestParams offrampRequestParams;
+        ReclaimProof proof;
+    }
+  }

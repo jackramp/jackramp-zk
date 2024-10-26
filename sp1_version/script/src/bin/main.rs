@@ -7,6 +7,8 @@ use reqwest;
 use sp1_sdk::{ProverClient, SP1Stdin};
 use std::io;
 use zktransfer_lib::PublicValuesStruct;
+use ethers::signers::{LocalWallet, Signer};
+use ethers::types::Address;
 
 /// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
 pub const ZKTRANSFER_ELF: &[u8] =
@@ -105,8 +107,12 @@ async fn main() {
 
     println!("Generating Proof ");
 
+    let wallet: LocalWallet = LocalWallet::new(&mut rand::thread_rng());
+    let random_address: Address = wallet.address();
+
     let mut stdin = SP1Stdin::new();
     stdin.write(&serde_json::to_string(&proof).unwrap());
+    stdin.write(random_address.as_fixed_bytes());
 
     let client = ProverClient::new();
 
@@ -116,9 +122,10 @@ async fn main() {
 
         // Read the output.
         let decoded = PublicValuesStruct::abi_decode(output.as_slice(), true).unwrap();
-        println!("hash channel id: {:?}", decoded.hashedChannelId);
-        println!("hash channel account: {:?}", decoded.hashedChannelAccount);
-        println!("amount: {}", decoded.amount);
+        println!("hash channel id: {:?}", decoded.offrampRequestParams.hashedChannelId);
+        println!("hash channel account: {:?}", decoded.offrampRequestParams.hashedChannelAccount);
+        println!("amount: {}", decoded.offrampRequestParams.amount);
+        println!("rw amount: {}", decoded.offrampRequestParams.amountRealWorld);
 
         // Record the number of cycles executed.
         println!("Number of cycles: {}", report.total_instruction_count());
