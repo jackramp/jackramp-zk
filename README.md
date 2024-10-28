@@ -2,6 +2,9 @@
 
 This project presents a proof of concept to scale P2P offramp transaction by use of a ZK-powered architecture
 
+### Documentation
+For more detailed documentation, please refer to the following [link](https://kbaji.gitbook.io/jackramp).
+
 ### Version
 There are 2 version of codes, only SP1 is working at the moment due to error to build `reqwest` lib in `zkRust` version
 - SP1
