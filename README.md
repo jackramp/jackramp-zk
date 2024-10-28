@@ -51,3 +51,8 @@ cargo run --release -- --prove
 cd sp1_version/script
 cargo run --release --bin evm -- --keystore-path <KEYSTORE_PATH> --jackramp-contract-address <JACKRAMP_CONTRACT_ADDR> --rpc-url https://ethereum-holesky-rpc.publicnode.com --network holesky
 ```
+
+
+## License
+
+This project is licensed under the [MIT license](https://opensource.org/licenses/MIT).
