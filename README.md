@@ -62,7 +62,7 @@ cargo run --release --bin evm -- --keystore-path <KEYSTORE_PATH> --jackramp-cont
 
 ### ZKTLS and Mock Bank Transaction API
 
-We use ZKTLS to call http request to bank API (currently we use mockup Bank API). The source codes is in `zktls` folder
+We use ZKTLS from Reclaim Protocol to call http request to bank API (currently we use mockup Bank API). The source codes is in `zktls` folder
 
 ## License
 
