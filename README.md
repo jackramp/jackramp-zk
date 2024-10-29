@@ -3,12 +3,15 @@
 This project presents a proof of concept to scale P2P offramp transaction by use of a ZK-powered architecture
 
 ### Documentation
+
 For more detailed documentation, please refer to the following [Gitbook link](https://kbaji.gitbook.io/jackramp).
 
 ### Version
+
 There are 2 version of codes, only SP1 is working at the moment due to error to build `reqwest` lib in `zkRust` version
+
 - SP1
-- zkRust 
+- zkRust
 
 ### Requirements
 
@@ -27,7 +30,9 @@ To build the program, run the following command:
 cd sp1_version/program
 cargo prove build
 ```
+
 This will generate ELF file `sp1_version/program/elf/riscv32im-succinct-zkvm-elf`
+
 ### Execute the Program
 
 To run the program without generating a proof:
@@ -55,6 +60,9 @@ cd sp1_version/script
 cargo run --release --bin evm -- --keystore-path <KEYSTORE_PATH> --jackramp-contract-address <JACKRAMP_CONTRACT_ADDR> --rpc-url https://ethereum-holesky-rpc.publicnode.com --network holesky
 ```
 
+### ZKTLS and Mock Bank Transaction API
+
+We use ZKTLS to call http request to bank API (currently we use mockup Bank API). The source codes is in `zktls` folder
 
 ## License
 
